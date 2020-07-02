@@ -410,6 +410,16 @@ if _debug.argcheck then
 end
 
 
+local function Pgetrlimit(rcstr)
+   local rc = RLIMIT_MAP[lower(rcstr)]
+   if rc == nil then
+      argerror('getrlimit', 1, "invalid option '" .. rcstr .. "'")
+   end
+   local rlim = getrlimit(rc)
+   return rlim.rlim_cur, rlim.rlim_max
+end
+
+
 local Spathconf = {
    CHOWN_RESTRICTED = _PC_CHOWN_RESTRICTED,
    LINK_MAX = _PC_LINK_MAX,
@@ -445,6 +455,22 @@ if _debug.argcheck then
       end
       return _pathconf(path, ...)
    end
+end
+
+
+local function Psetrlimit(rcstr, cur, max)
+   local rc = RLIMIT_MAP[lower(rcstr)]
+   if rc == nil then
+      argerror('setrlimit', 1, "invalid option '" .. rcstr .. "'")
+   end
+   local lim
+   if cur == nil or max == nil then
+      lim = getrlimit(rc)
+   end
+   return setrlimit(rc, {
+      rlim_cur = cur or lim.rlim_cur,
+      rlim_max = max or lim.rlim_max,
+   })
 end
 
 
@@ -738,14 +764,7 @@ return {
    -- @return[2] nil
    -- @treturn[2] string error message
    -- @treturn[2] int errnum
-   getrlimit = argscheck('getrlimit(string)', function (rcstr)
-      local rc = RLIMIT_MAP[lower(rcstr)]
-      if rc == nil then
-         argerror('getrlimit', 1, "invalid option '" .. rcstr .. "'")
-      end
-      local rlim = getrlimit(rc)
-      return rlim.rlim_cur, rlim.rlim_max
-   end),
+   getrlimit = argscheck('getrlimit(string)', Pgetrlimit),
 
    --- Get time of day.
    -- @function gettimeofday
@@ -881,20 +900,7 @@ return {
    -- @return[2] nil
    -- @treturn[2] string error message
    -- @treturn[2] int errnum
-   setrlimit = argscheck('setrlimit(string, ?int, ?int)', function(rcstr, cur, max)
-      local rc = RLIMIT_MAP[lower(rcstr)]
-      if rc == nil then
-         argerror('setrlimit', 1, "invalid option '" .. rcstr .. "'")
-      end
-      local lim
-      if cur == nil or max == nil then
-         lim = getrlimit(rc)
-      end
-      return setrlimit(rc, {
-         rlim_cur = cur or lim.rlim_cur,
-         rlim_max = max or lim.rlim_max,
-      })
-   end),
+   setrlimit = argscheck('setrlimit(string, ?int, ?int)', Psetrlimit),
 
    --- Information about an existing file path.
    -- If the file is a symbolic link, return information about the link
