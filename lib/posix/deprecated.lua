@@ -1,3 +1,5 @@
+local print=print
+local tostring=tostring
 --[[
  POSIX library for Lua 5.1, 5.2 & 5.3.
  Copyright (C) 2014-2020 Gary V. Vaughan
@@ -170,6 +172,7 @@ local function LegacyTm(posixtm)
    }
 end
 
+print(format('DEBUG: %s', tostring(argerror)))
 
 local function argtypeerror(name, i, expect, actual, level)
    level = level or 1
